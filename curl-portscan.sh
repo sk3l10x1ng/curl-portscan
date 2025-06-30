@@ -57,7 +57,6 @@ get_port_index() {
 
     echo $service
 }
-y
 
 # set defaults
 timeout=$DEFAULT_TIMEOUT
