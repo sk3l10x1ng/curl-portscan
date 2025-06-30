@@ -2,11 +2,11 @@
 
 # Portscans a host using curl, because its almost always available.
 # It is no replacement for nmap, but gets the job done!
-#
+
 
 DEFAULT_PORTS="1-1024"
 DEFAULT_TIMEOUT=1
-PORTINDEX=""
+declare -A PORTINDEX  # Initialize as an associative array
 VERBOSE=0
 DEFAULT_DELAY=2
 LOG_FILE=""
@@ -57,7 +57,6 @@ get_port_index() {
 
     echo $service
 }
-y
 
 # set defaults
 timeout=$DEFAULT_TIMEOUT
@@ -161,18 +160,18 @@ populate_port_index
 
 # Fast scan using /etc/services for common ports
 if [ $FAST_SCAN -eq 1 ]; then
-    ports=$(grep -Eo '^[0-9]+' /etc/services | sort -nu | tr '\n' ' ')
-fi
+    ports=$(grep -Eo '^[a-zA-Z0-9_-]+\s+[0-9]{1,5}/tcp' /etc/services | awk '{print $2}' | cut -d/ -f1 | sort -nu | tr '\n' ' ')
+else
+    # Randomize port list if requested
+    if [ $RANDOMIZE -eq 1 ]; then
+        ports=$(echo "$ports" | tr ' ' '\n' | shuf | tr '\n' ' ')
+    fi
 
-# Randomize port list if requested
-if [ $RANDOMIZE -eq 1 ]; then
-    ports=$(echo "$ports" | tr ' ' '\n' | shuf | tr '\n' ' ')
+    # Do the scan.
+    portcount=$(echo "$ports" | wc -w)
+    echo [+] Scanning "$portcount" ports on "$target"
+    echo
 fi
-
-# Do the scan.
-portcount=$(echo "$ports" | wc -w)
-echo [+] Scanning "$portcount" ports on "$target"
-echo
 
 count=0
 for port in $ports; do
@@ -180,23 +179,23 @@ for port in $ports; do
     curl -s -m "$timeout" "${target}":"${port}" > /dev/null
 
     case $? in
-	6) # Failed to resolve
-	    echo "[-] Unable to resolve host: $target"
-	    echo "[-] Exiting."
-	    exit 1
-	    ;;
-	7) # Failed to connect
-	    if [ $VERBOSE -eq 1 ]; then
-		echo "[*] Port ${port}/${service} -- Failed to connect"
-	    fi
-	    continue
-	    ;;
-	28) # Operation Timeout
-	    if [ $VERBOSE -eq 1 ]; then
-		echo "[*] Port ${port}/${service} -- Operation Timeout"
-	    fi
-	    continue
-	    ;;
+        6) # Failed to resolve
+            echo "[-] Unable to resolve host: $target"
+            echo "[-] Exiting."
+            exit 1
+            ;;
+        7) # Failed to connect
+            if [ $VERBOSE -eq 1 ]; then
+                echo "[*] Port ${port}/${service} -- Failed to connect"
+            fi
+            continue
+            ;;
+        28) # Operation Timeout
+            if [ $VERBOSE -eq 1 ]; then
+                echo "[*] Port ${port}/${service} -- Operation Timeout"
+            fi
+            continue
+            ;;
     esac
 
     echo "[+] Port ${port}/${service} appears to be open."
