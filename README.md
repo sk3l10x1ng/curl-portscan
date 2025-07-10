@@ -30,7 +30,7 @@ Scanning can also be done via a 1 liner to avoid writes to disk:
   systems in the name of security, curl is nearly always installed on
   Linux systems.
 
-## TODO
+## Added Features
 
 - Add support for IP ranges and/or CIDR
 - "Fast" scan using /etc/services for common ports
