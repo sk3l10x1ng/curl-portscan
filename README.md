@@ -1,42 +1,74 @@
 # curl-portscan.sh
 
-This port scans a host using curl. Useful for boxes that don't have
-netcat, nmap, or anything good on them. Almost every host has curl
-because its not typically viewed as malicious.
+A port scanner using curl. Useful for boxes that don't have netcat, nmap, or other scanning tools. Almost every host has curl because it's not typically viewed as malicious.
 
-This scanner sucks, but gets the job done.
+It's no replacement for nmap, but gets the job done!
 
-Scanning can also be done via a 1 liner to avoid writes to disk:
+## Usage
 
-	 $ for i in {1..1024}; do curl -s -m 1 localhost:$i >/dev/null; if [ ! $? -eq 7 ] && [ ! $? -eq 28 ]; then echo open: $i; fi; done
+```
+./curl-portscan.sh -t <target> -p <ports> [options]
+```
 
-## WHY? -- "Just use nmap, you weirdo!"
+### Options
 
-- Bear Grylls drinks his own urine in extreme situations so he doesn't
-  die of dehydration. Maybe he should have cracked open an ice cold
-  bottle of Smart Water instead!
+| Option | Description |
+|--------|-------------|
+| `-t <target>` | Target host/IP/CIDR/range (e.g., `192.168.1.0/24` or `192.168.1.1-192.168.1.10`) |
+| `-p <ports>` | Ports to scan (e.g., `1-1024,1055,3333-4444` or `all` for 1-65535) |
+| `-m <timeout>` | Curl timeout in seconds (default: 1) |
+| `-v` | Verbose output (shows closed/filtered ports) |
+| `-d <delay>` | Delay between port scans in seconds |
+| `-r` | Randomize port scanning order |
+| `-f` | Fast scan using common ports from `/etc/services` |
+| `-l <logfile>` | Log results to a file |
+| `-D` | Detect DNS servers that catch unresolvable hosts |
+| `-h` | Display help message |
 
-- A prisoner picked his handcuff keys using a paperclip he found on
-  the ground. Perhaps the handcuff key would have been a better
-  choice?
-  
-- You are a professional carpenter on a job and your hammer
-  breaks. You have a spare hammer in your tool box, but it isn't as
-  good as the one you broke. Do you just go home for the day?
+### Examples
 
-- Living off the land. No need to install extra shit.
+```bash
+# Scan common ports on a single host
+./curl-portscan.sh -t 192.168.1.1 -p 1-1024
 
-- While its pretty common for sysadmins to remove netcat and nmap from
-  systems in the name of security, curl is nearly always installed on
-  Linux systems.
+# Fast scan using common ports
+./curl-portscan.sh -t example.com -f
 
-## Added Features
+# Scan a CIDR range with logging
+./curl-portscan.sh -t 192.168.1.0/24 -p 22,80,443 -l results.txt
 
-- Add support for IP ranges and/or CIDR
-- "Fast" scan using /etc/services for common ports
-- Detect DNS servers that catch unresolvable hosts and serve up a crappy page
-- Logging
-- Delay between trying ports
-- Randomize port list
-- Shortened version that can be copied/pasted easier through crappy netcat shells
+# Scan IP range with randomized ports and delay
+./curl-portscan.sh -t 192.168.1.1-192.168.1.10 -p 1-1000 -r -d 1
+
+# Verbose scan with DNS catchall detection
+./curl-portscan.sh -t example.com -p 1-1024 -v -D
+```
+
+### One-liner
+
+Scanning can also be done via a one-liner to avoid writes to disk:
+
+```bash
+for i in {1..1024}; do curl -s -m 1 localhost:$i >/dev/null; if [ ! $? -eq 7 ] && [ ! $? -eq 28 ]; then echo open: $i; fi; done
+```
+
+## Features
+
+- **CIDR Support** - Scan entire subnets (e.g., `192.168.1.0/24`)
+- **IP Range Support** - Scan IP ranges (e.g., `192.168.1.1-192.168.1.10`)
+- **Fast Scan Mode** - Quickly scan common ports from `/etc/services`
+- **Service Detection** - Shows service names from `/etc/services`
+- **DNS Catchall Detection** - Detects DNS servers that resolve non-existent hosts
+- **Randomized Scanning** - Randomize port order to avoid detection
+- **Scan Delay** - Add delays between ports for stealth
+- **Logging** - Save results to file in nmap-style format
+- **Color Output** - Green for open, red for closed, yellow for filtered
+- **nmap-style Output** - Familiar output format
+
+## Why curl?
+
+- **Living off the land** - No need to install extra tools
+- **Always available** - curl is nearly always installed on Linux systems
+- **Not flagged** - Unlike nmap/netcat, curl isn't typically removed by security-conscious sysadmins
+- **Sometimes you use what you have** - When the right tool isn't available, improvise
 
